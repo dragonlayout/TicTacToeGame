@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    tools:context="maged.csi5230.edu.tictactoegame.MainActivity">
+
+    <TextView
+        android:id="@+id/text_view_game_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="5dp"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp"
+        android:gravity="center"
+        tools:text="the game with John"/>
+    <TextView
+        android:id="@+id/text_view_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="5dp"
+        android:textColor="@android:color/black"
+        android:textSize="18sp"
+        android:text="press START button to start the game."/>
+
+    <android.support.v7.widget.GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        app:rowCount="3"
+        app:columnCount="3">
+        　
+        <Button
+            android:id="@+id/btn1"
+            app:layout_columnWeight="1"
+            app:layout_rowWeight="1"
+            android:layout_margin="2dp"
+            android:textSize="50sp"
+            android:tag="0,0"
+            />
+        　　
+        <Button
+            android:id="@+id/btn2"
+            app:layout_columnWeight="1"
+            app:layout_rowWeight="1"
+            android:layout_margin="2dp"
+            android:textSize="50sp"
+            android:tag="0,1"
+            />
+        　　　
+        <Button
+            android:id="@+id/btn3"
+            app:layout_columnWeight="1"
+            app:layout_rowWeight="1"
+            android:layout_margin="2dp"
+            android:textSize="50sp"
+            android:tag="0,2"
+            />
+        　　　
+        <Button
+            android:id="@+id/btn4"
+            app:layout_columnWeight="1"
+            app:layout_rowWeight="1"
+            android:layout_margin="2dp"
+            android:textSize="50sp"
+            android:tag="1,0"
+            />
+        　　
+        <Button
+            android:id="@+id/btn5"
+            app:layout_columnWeight="1"
+            app:layout_rowWeight="1"
+            android:layout_margin="2dp"
+            android:textSize="50sp"
+            android:tag="1,1"
+            />
+        　　
+        <Button
+            android:id="@+id/btn6"
+            app:layout_columnWeight="1"
+            app:layout_rowWeight="1"
+            android:layout_margin="2dp"
+            android:textSize="50sp"
+            android:tag="1,2"
+            />
+
+        <Button
+            android:id="@+id/btn7"
+            app:layout_columnWeight="1"
+            app:layout_rowWeight="1"
+            android:layout_margin="2dp"
+            android:textSize="50sp"
+            android:tag="2,0"
+            />
+
+        <Button
+            android:id="@+id/btn8"
+            app:layout_columnWeight="1"
+            app:layout_rowWeight="1"
+            android:layout_margin="2dp"
+            android:textSize="50sp"
+            tools:text="〇"
+            android:tag="2,1"
+            />
+
+        <Button
+            android:id="@+id/btn9"
+            app:layout_columnWeight="1"
+            app:layout_rowWeight="1"
+            android:layout_margin="2dp"
+            android:textSize="50sp"
+            tools:text="＋"
+            android:tag="2,2"
+            />
+    </android.support.v7.widget.GridLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_margin="10dp">
+        <Button
+            android:id="@+id/btn_start"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="START"/>
+        <Button
+            android:id="@+id/btn_stop"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="STOP"/>
+    </LinearLayout>
+
+</LinearLayout>
