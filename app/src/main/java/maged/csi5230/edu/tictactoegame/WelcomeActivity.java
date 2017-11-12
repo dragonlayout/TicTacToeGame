@@ -13,12 +13,10 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
+import maged.csi5230.edu.tictactoegame.utils.Constants;
 import maged.csi5230.edu.tictactoegame.utils.SmsUtils;
 
 public class WelcomeActivity extends BaseActivity implements View.OnClickListener{
-
-    private SMSMessageBroadcastReceiver mReceiver;
-    private Context mContext;
 
     private EditText mEditTextPhoneNumber;
     private Button mButtonJoin;
@@ -27,26 +25,9 @@ public class WelcomeActivity extends BaseActivity implements View.OnClickListene
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_welcome);
 
-        mContext = this;
-
         mEditTextPhoneNumber = findViewById(R.id.edit_text_phone_number);
         mButtonJoin = findViewById(R.id.btn_join);
         mButtonJoin.setOnClickListener(this);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // register the broadcast receiver
-        mReceiver = new SMSMessageBroadcastReceiver();
-        IntentFilter intentFilter = new IntentFilter(SMSMessageBroadcastReceiver.SMS_ACTION);
-        registerReceiver(mReceiver, intentFilter);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        unregisterReceiver(mReceiver);
     }
 
     @Override
@@ -66,14 +47,15 @@ public class WelcomeActivity extends BaseActivity implements View.OnClickListene
                             .setPositiveButton("YES", new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
+                                    // todo hold the dialog unit get response from the opponent
                                     // 判断输入了内容
                                     if (!TextUtils.isEmpty(editTextName.getText())) {
                                         // save your name to sharedPreferences
                                         long opponentPhoneNumber = Integer.valueOf(mEditTextPhoneNumber.getText().toString());
                                         // 保存进 sharedPreferences
-                                        SharedPreferences sf = getSharedPreferences("opponent_info", MODE_PRIVATE);
-                                        sf.edit().putLong("phone_number", opponentPhoneNumber).apply();
-                                        sf.edit().putString("name", editTextName.getText().toString()).apply();
+                                        SharedPreferences sf = getSharedPreferences(Constants.SF_FILE_NAME, MODE_PRIVATE);
+                                        sf.edit().putLong(Constants.PHONE_NUMBER, opponentPhoneNumber).apply();
+                                        sf.edit().putString(Constants.NAME, editTextName.getText().toString()).apply();
                                         // send sms to opponent
                                         SmsUtils.sendMessage(opponentPhoneNumber, "0,-1," + editTextName.getText().toString());
                                     }
