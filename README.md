@@ -14,3 +14,6 @@
 8. at the end, when someone win this game, both simulator will get the notification
 ![](screenshots/8.png)
 9. you click leave, go back to last screen.
+
+whole opreation.
+![](screenshots/tictactoegame.gif)
