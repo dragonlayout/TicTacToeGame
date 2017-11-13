@@ -30,8 +30,6 @@ public class SMSMessageBroadcastReceiver extends BroadcastReceiver {
     public static final String SMS_ACTION = "android.provider.Telephony.SMS_RECEIVED";
     private OnSmsReceivedListener mListener;
 
-    // todo 采用动态注册广播
-
     @Override
     public void onReceive(final Context context, final Intent intent) {
         // sms receive action
@@ -40,15 +38,12 @@ public class SMSMessageBroadcastReceiver extends BroadcastReceiver {
             Bundle bundle = intent.getExtras();
             if (bundle != null) {
                 Object pdusData[] = (Object[]) bundle.get("pdus"); // pdu: protocol data unit
-                //解析短信
-                // for this application 长度是一个短信可以包含的
+                // parse the sms
+                // for this application, one single sms can contain the protocol
                 SmsMessage msg = SmsMessage.createFromPdu((byte[]) pdusData[0]);
                 String messageBody = msg.getMessageBody();
                 final long phoneNumber = Long.valueOf(msg.getDisplayOriginatingAddress());
-                System.out.println("message body: " + messageBody);
-                // 处理 自定义的协议
-
-                // todo parser
+                // handle the self-defined protocol
                 // the protocol is string, interval with ',' number like x,y,z
                 // for the x is the flag of the player's action
                 // x => 0 join, y has three options, -1, 0, 1,
@@ -63,19 +58,20 @@ public class SMSMessageBroadcastReceiver extends BroadcastReceiver {
                 //                                     1 for you say yes the the start request
                 //             z stands for the player's name like John
                 //
-                //   => 2 stop   todo stop button
-                //   => 3 resume todo resume button
+                //   => 2 stop button
+                //              y has three options -1, 0, 1
+                //                                  -1 for request for stopping the game
+                //                                   0 for refuse to stop the game
+                //                                   1 for agree to stop the game
+                //              z => name
                 //   => 4 move  i.e. => 4,0,1,chenlong
                 //              y position data(0,1), z => opponent's name
                 //              y => -1,1 guest wins circle
                 //              y => -1,0 host wins plus
                 //              y => -1,-1 no winner
-                //   => 5 game over
-                //
                 int flag = Integer.valueOf(messageBody.split(",")[0]);
                 switch (flag) {
                     case 0:
-                        // 判断 y 是
                         int joinY = Integer.valueOf(messageBody.split(",")[1]);
                         final String joniName = messageBody.split(",")[2];
                         if (joinY == -1) {
@@ -117,7 +113,7 @@ public class SMSMessageBroadcastReceiver extends BroadcastReceiver {
                             dialog.show();
 
                         } else if (joinY == 1) {
-                            // 自己发送的 join 请求被接受， 跳转到 mainActivity
+                            //  join accepted， jump to mainActivity
                             Intent mainActivityIntent = new Intent(context, MainActivity.class);
                             mainActivityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                             mainActivityIntent.putExtra(Constants.OPPONENT_PLAYER_NAME, joniName);
@@ -128,7 +124,7 @@ public class SMSMessageBroadcastReceiver extends BroadcastReceiver {
                         break;
                     case 1:
                         int startY = Integer.valueOf(messageBody.split(",")[1]);
-                        String startName = messageBody.split(",")[2];
+                        final String startName = messageBody.split(",")[2];
                         if (startY == -1) {
                             // pop up a dialog
                             // get a game start request
@@ -144,7 +140,7 @@ public class SMSMessageBroadcastReceiver extends BroadcastReceiver {
                                             String name = sf.getString(Constants.NAME, "default name");
                                             SmsUtils.sendMessage(opponentPhoneNumber, "1,1," + name);
                                             // 通知
-                                            mListener.agreeToStartTheGame();
+                                            mListener.agreeToStartTheGame(startName);
                                         }
                                     })
                                     .setNegativeButton("NO", new DialogInterface.OnClickListener() {
@@ -163,28 +159,71 @@ public class SMSMessageBroadcastReceiver extends BroadcastReceiver {
                         }
                         break;
                     case 2:
-                        break;
-                    case 3:
+                        // stop button
+                        int stopY = Integer.valueOf(messageBody.split(",")[1]);
+                        SharedPreferences sf = context.getSharedPreferences(Constants.SF_FILE_NAME, MODE_PRIVATE);
+                        final long opponentPhoneNumber = sf.getLong(Constants.PHONE_NUMBER, 0);
+                        final String name = sf.getString(Constants.NAME, "default name");
+                        if (stopY == -1) {
+                            // 对手提出结束游戏 弹出对话框 统一或者拒绝
+                            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                            builder.setTitle("Stop the game.")
+                                    .setMessage("Do you agree to stop the game?")
+                                    .setPositiveButton("YES", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            //  send back sms
+                                            SmsUtils.sendMessage(opponentPhoneNumber, "2,1," + name);
+                                            //  close the main activity
+                                            mListener.finishMainActivity();
+                                        }
+                                    })
+                                    .setNegativeButton("NO", new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            //  send back sms no agree to stop the game
+
+                                            SmsUtils.sendMessage(opponentPhoneNumber, "2,0," + name);
+                                        }
+                                    })
+                                    .show();
+                        } else if (stopY == 0) {
+                            //  对手拒绝 结束游戏 继续下去
+                            // todo toast
+                        } else {
+                           // 对手统一结束游戏 关闭 main activity
+                            mListener.finishMainActivity();
+                        }
                         break;
                     case 4:
                         // move part 4,0,0,name
-                        String dialogMessage = messageBody.split(",")[3];
                         int moveFlag = Integer.valueOf(messageBody.split(",")[1]);
                         if (moveFlag < 0) {
                             // got a winner or no winner pop up a dialog
+                            int result = Integer.valueOf(messageBody.split(",")[2]);
+                            String winnerName = messageBody.split(",")[3];
+                            String dialogMessage = "";
+                            int hostOrGuest = mListener.hostOrGuest();
+                            if (hostOrGuest == result) {
+                                dialogMessage = "Congrats you win the game.";
+                            } else {
+                                dialogMessage = winnerName + " wins the game.";
+                            }
                             AlertDialog.Builder builder = new AlertDialog.Builder(context);
                             builder.setTitle("Game Over")
                                     .setMessage(dialogMessage)
-                                    .setPositiveButton("Restart the game", new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            // todo restart the game
-                                        }
-                                    })
+//                                    .setPositiveButton("Restart the game", new DialogInterface.OnClickListener() {
+//                                        @Override
+//                                        public void onClick(DialogInterface dialog, int which) {
+//                                            // todo restart the game
+//
+//                                        }
+//                                    })
                                     .setNegativeButton("Leave", new DialogInterface.OnClickListener() {
                                         @Override
                                         public void onClick(DialogInterface dialog, int which) {
-                                            // todo leave the game
+                                            // leave the game
+                                            mListener.finishMainActivity();
                                         }
                                     })
                                     .show();
@@ -196,8 +235,6 @@ public class SMSMessageBroadcastReceiver extends BroadcastReceiver {
                             int y = Integer.valueOf(messageBody.split(",")[2]);
                             mListener.showOpponentMove(x, y);
                         }
-                        break;
-                    case 5:
                         break;
                     default:
                         break;
@@ -212,10 +249,14 @@ public class SMSMessageBroadcastReceiver extends BroadcastReceiver {
 
     public interface OnSmsReceivedListener {
         // agree to start the game
-        void agreeToStartTheGame();
+        void agreeToStartTheGame(String opponentName);
         // host get the confirm of starting the game
         void getStartGameConfirmed(String opponentName);
         // display the opponent's move
         void showOpponentMove(int x, int y);
+        // finish mainActivity
+        void finishMainActivity();
+
+        int hostOrGuest();
     }
 }

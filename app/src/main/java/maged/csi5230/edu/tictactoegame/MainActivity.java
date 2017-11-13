@@ -1,11 +1,8 @@
 package maged.csi5230.edu.tictactoegame;
 
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -31,15 +28,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener{
     TextView textViewInfo;
     TextView textViewTitle;
 
-    // 游戏的棋盘 3*3
+    // the board of the game 3*3
     private int[][] mTable;
 
     // 0 => host(plus), 1 => guest(circle first to move)
     private int hostOrGuest = -1;
-    private boolean mIsYourTurn = false;
 
     private String mOpponentPlayerName;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,27 +50,27 @@ public class MainActivity extends BaseActivity implements View.OnClickListener{
         super.onResume();
         mReceiver.setOnSmsReceivedListener(new SMSMessageBroadcastReceiver.OnSmsReceivedListener() {
             @Override
-            public void agreeToStartTheGame() {
+            public void agreeToStartTheGame(String opponentName) {
                 // what to do when start the game
                 // enable all board button
                 enableAllBoardButton();
                 // I am the guest first to move
                 hostOrGuest = Constants.GUEST;
                 // display whose turn it is
+                mOpponentPlayerName = opponentName;
                 textViewInfo.setText("It's your turn.");
-                mIsYourTurn = true;
             }
 
             @Override
             public void getStartGameConfirmed(String opponentName) {
                 hostOrGuest = Constants.HOST;
                 textViewInfo.setText("It's " + opponentName + " turn.");
-                mIsYourTurn = false;
                 mOpponentPlayerName = opponentName;
             }
 
             @Override
             public void showOpponentMove(int x, int y) {
+                textViewInfo.setText("It's your turn.");
                 // enable board buttons
                 enableAllBoardButton();
                 // show the move of the opponent x, y => 0, 1
@@ -87,6 +82,16 @@ public class MainActivity extends BaseActivity implements View.OnClickListener{
                         movedBtn.setText(PLUS);
                     }
                 }
+            }
+
+            @Override
+            public void finishMainActivity() {
+                finish();
+            }
+
+            @Override
+            public int hostOrGuest() {
+                return hostOrGuest;
             }
         });
     }
@@ -146,14 +151,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener{
         String name = sf.getString(Constants.NAME, "default name");
         switch (id) {
             case R.id.btn_start:
-                // 谁点击 start button 都将发送 sms 给对手 请求开始游戏
                 // get opponent phone number from sharedPreferences
                 SmsUtils.sendMessage(opponentPhoneNumber, "1,-1," + name);
                 break;
             case R.id.btn_stop:
+                SmsUtils.sendMessage(opponentPhoneNumber, "2,-1," + name);
                 break;
-            // 在 对应的button 设置符号
-            // 并执行对游戏对判断
+            // the 9 buttons on the board
             case R.id.btn1:
             case R.id.btn2:
             case R.id.btn3:
@@ -163,51 +167,56 @@ public class MainActivity extends BaseActivity implements View.OnClickListener{
             case R.id.btn7:
             case R.id.btn8:
             case R.id.btn9:
-                //  先判断当前棋盘状态 当 guest 点击棋盘按钮时，发送 sms 4,0,1,name
-                // 先占位
+                // get the coordinates from the tag of the button(you can see from the layout file)
                 Button btnSelected = findViewById(id);
                 int x = getCoordinateX(btnSelected.getTag());
                 int y = getCoordinateY(btnSelected.getTag());
+                // whose move
                 if (hostOrGuest == Constants.HOST) {
-                    // plus
                     mTable[x][y] = -1;
                     btnSelected.setText(PLUS);
                 } else if (hostOrGuest == Constants.GUEST){
                     mTable[x][y] = 1;
                     btnSelected.setText(CIRCLE);
                 }
-                // 1. 判断游戏是否结束
+                // 1. if game over
                 int result = checkResult();
                 switch (result) {
                     case 0:
                     case 1:
+                        // change the dialog message
                         // 弹窗
+                        String winnerName = "";
                         String dialogMessage = "";
                         if (result == hostOrGuest) {
                             // you win
                             dialogMessage = "Congrats you win the game.";
+                            winnerName = name;
                         } else {
                             // opponent wins
                             dialogMessage = mOpponentPlayerName + " wins the game.";
+                            winnerName = mOpponentPlayerName;
                         }
                         // pop up a dialog
                         AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
                         builder.setTitle("Game Over")
                                 .setMessage(dialogMessage)
-                                .setPositiveButton("Restart the game", new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        // todo restart
-                                    }
-                                })
+//                                .setPositiveButton("Restart the game", new DialogInterface.OnClickListener() {
+//                                    @Override
+//                                    public void onClick(DialogInterface dialog, int which) {
+//                                        // todo restart
+//
+//                                    }
+//                                })
                                 .setNegativeButton("Leave", new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
-                                        // todo leave the game
+                                        // leave the game
+                                        finish();
                                     }
                                 })
                                 .show();
-                        SmsUtils.sendMessage(opponentPhoneNumber, "4,-1," + result + "," + dialogMessage);
+                        SmsUtils.sendMessage(opponentPhoneNumber, "4,-1," + result + "," + winnerName);
                         break;
                     case 2:
                         // no winner yet 继续游戏
@@ -234,18 +243,20 @@ public class MainActivity extends BaseActivity implements View.OnClickListener{
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
                                     // todo restart
+
                                 }
                             })
                             .setNegativeButton("Leave", new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
-                                    // todo leave the game
+                                    //  leave the game
+                                    finish();
                                 }
                             })
                             .show();
                     SmsUtils.sendMessage(opponentPhoneNumber, "4,-1,-1" + "," + dialogMessage);
                 } else {
-                    // 继续游戏
+                    // continue the game
                     SmsUtils.sendMessage(opponentPhoneNumber, "4," + x + "," + y + "," + name);
                     // disable the board button
                     disableAllBoardButton();
@@ -261,11 +272,11 @@ public class MainActivity extends BaseActivity implements View.OnClickListener{
      * @return true => no free position, false => at least have one free position
      */
     private boolean isBoardFull() {
-        boolean canContinue = false;
+        boolean canContinue = true;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 if (mTable[i][j] == 0) {
-                    canContinue = true;
+                    canContinue = false;
                 }
             }
         }

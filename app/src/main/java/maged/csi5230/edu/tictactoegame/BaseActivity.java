@@ -5,14 +5,11 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 
-import maged.csi5230.edu.tictactoegame.utils.ActivityController;
-
 /**
  * Created by dragonlayout on 2017/11/11.
  */
 
 public class BaseActivity extends AppCompatActivity{
-    // private
 
     protected SMSMessageBroadcastReceiver mReceiver;
     protected Context mContext;
@@ -21,7 +18,6 @@ public class BaseActivity extends AppCompatActivity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mContext = this;
-        ActivityController.add(this);
     }
 
     @Override
@@ -38,9 +34,4 @@ public class BaseActivity extends AppCompatActivity{
         unregisterReceiver(mReceiver);
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        ActivityController.remove(this);
-    }
 }
